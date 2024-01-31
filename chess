@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Bot</title>
+  <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-v7smR3Beo1m9j3A/j8/AIg46H4C7Kl6FI2pNkhepovrm5su7/Ut00Ii2zMzBZLt6P" crossorigin="anonymous">
+</head>
+<body>
+  <h1>Chess Bot</h1>
+  <div id="board" style="width: 400px"></div>
+
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha384-o5uTi1Yz9xrSzwel3+YejMmAci3F4JGF4agp7Y06j7d4TKcTpd8FJ1CSq9pvEZEG" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js" integrity="sha384-HR7vT3wz3FLbxawtl7JQFzDWYj08OQzK8aPnE0ZLOlaqfcyMBt5qflCe3TPs6tnL" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/chess.js@0.10.2"></script>
+  <script>
+    $(document).ready(function () {
+      var board = Chessboard('board', {
+        draggable: true,
+        dropOffBoard: 'trash',
+        sparePieces: true
+      });
+
+      var game = new Chess();
+
+      // Function to make a simple random move for the bot
+      function makeBotMove() {
+        var moves = game.ugly_moves();
+        var move = moves[Math.floor(Math.random() * moves.length)];
+        game.ugly_move(move);
+        board.position(game.fen());
+        renderStatus();
+      }
+
+      // Event handler for user's move
+      function onDragStart (source, piece, position, orientation) {
+        if (game.in_checkmate() === true || game.in_draw() === true ||
+            piece.search(/^b/) !== -1) {
+          return false;
+        }
+      }
+
+      // Event handler for user's drop
+      function onDrop (source, target) {
+        var move = game.ugly_move({ from: source, to: target, promotion: 'q' });
+
+        removeGreySquares();
+        board.position(game.fen());
+        renderStatus();
+
+        setTimeout(makeBotMove, 250);
+      }
+
+      // Event handler for when the piece is picked up
+      function onSnapEnd () {
+        board.position(game.fen());
+      }
+
+      // Render the game status
+      function renderStatus() {
+        var status = '';
+
+        var moveColor = 'White';
+        if (game.turn() === 'b') {
+          moveColor = 'Black';
+        }
+
+        // Checkmate?
+        if (game.in_checkmate() === true) {
+          status = 'Game over, ' + moveColor + ' is in checkmate.';
+        }
+
+        // Draw?
+        else if (game.in_draw() === true) {
+          status = 'Game over, it\'s a draw.';
+        }
+
+        // Game still going
+        else {
+          status = moveColor + '\'s move';
+          if (game.in_check() === true) {
+            status += ', ' + moveColor + ' is in check';
+          }
+        }
+
+        $('#status').html(status);
+      }
+
+      // Remove grey squares
+      function removeGreySquares() {
+        $('#board .square-55d63').css('background', '');
+      }
+
+      var config = {
+        draggable: true,
+        position: 'start',
+        onDragStart: onDragStart,
+        onDrop: onDrop,
+        onSnapEnd: onSnapEnd
+      };
+      board = Chessboard('board', config);
+
+      renderStatus();
+    });
+  </script>
+</body>
+</html>
